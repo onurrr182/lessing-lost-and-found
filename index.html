@@ -55,39 +55,61 @@
     </section>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
 <script>
-    // This script saves the uploaded item to your browser's memory
+    // 1. PASTE YOUR FIREBASE CONFIG HERE:
+  const firebaseConfig = {
+    apiKey: "AIzaSyABkqWYzqbu_q43i6ZPS3oUk8JL_CFQtDw",
+    authDomain: "lessing-lost-found.firebaseapp.com",
+    projectId: "lessing-lost-found",
+    storageBucket: "lessing-lost-found.firebasestorage.app",
+    messagingSenderId: "603044278775",
+    appId: "1:603044278775:web:4da5343f07aa47453a7ef2"
+  };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // 2. Handle the Upload Form
     document.getElementById('uploadForm').addEventListener('submit', function(e) {
-        e.preventDefault(); // Prevents the page from just refreshing
+        e.preventDefault(); 
+        
+        // Change button text so user knows it's working
+        const btn = document.querySelector('button[type="submit"]');
+        btn.innerText = "Uploading to Cloud...";
+        btn.disabled = true;
 
         const fileInput = document.getElementById('itemImage');
         const category = document.getElementById('itemCategory').value;
         const desc = document.getElementById('itemDesc').value;
         const location = document.getElementById('itemLocation').value;
 
-        // Convert the image to a format the browser can save
+        // Convert image and send to database
         const reader = new FileReader();
         reader.onload = function(event) {
             const imageData = event.target.result;
 
-            // Create an object for the new item
-            const newItem = {
+            // Save to Firebase Firestore!
+            db.collection("lostItems").add({
                 image: imageData,
                 category: category,
                 description: desc,
                 location: location,
-                date: new Date().toLocaleDateString()
-            };
-
-            // Get existing items from memory, or start an empty list
-            let lostItems = JSON.parse(localStorage.getItem('lessingItems')) || [];
-            lostItems.push(newItem); // Add new item to the list
-            
-            // Save it back to memory
-            localStorage.setItem('lessingItems', JSON.stringify(lostItems));
-
-            alert("Item successfully posted!");
-            window.location.href = "search.html"; // Send user to search page
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(() => {
+                alert("Item saved to database!");
+                window.location.href = "search.html"; // Go to search page
+            })
+            .catch((error) => {
+                console.error("Error adding document: ", error);
+                alert("Error uploading. Try again.");
+                btn.innerText = "Post Anonymously";
+                btn.disabled = false;
+            });
         };
         reader.readAsDataURL(fileInput.files[0]);
     });

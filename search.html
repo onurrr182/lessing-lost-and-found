@@ -69,14 +69,41 @@
     </div>
 </div>
 
-<script>
-    // 1. Get the items from Browser Memory
-    let items = JSON.parse(localStorage.getItem('lessingItems')) || [];
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-    // 2. Function to draw the items on the screen
+<script>
+    // 1. PASTE YOUR EXACT SAME FIREBASE CONFIG HERE:
+const firebaseConfig = {
+  apiKey: "AIzaSyABkqWYzqbu_q43i6ZPS3oUk8JL_CFQtDw",
+  authDomain: "lessing-lost-found.firebaseapp.com",
+  projectId: "lessing-lost-found",
+  storageBucket: "lessing-lost-found.firebasestorage.app",
+  messagingSenderId: "603044278775",
+  appId: "1:603044278775:web:4da5343f07aa47453a7ef2"
+};
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let allItems = []; // This will hold the cloud data
+
+    // 2. Listen to the Cloud Database (Real-time updates!)
+    db.collection("lostItems").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
+        allItems = []; // Clear the old list
+        snapshot.forEach((doc) => {
+            let item = doc.data();
+            item.id = doc.id; // Save the unique database ID
+            allItems.push(item);
+        });
+        applyFilters(); // Draw them on the screen
+    });
+
+    // 3. Draw items on screen
     function displayItems(itemsToShow) {
         const container = document.getElementById('itemsContainer');
-        container.innerHTML = ''; // Clear current items
+        container.innerHTML = ''; 
 
         if(itemsToShow.length === 0) {
             container.innerHTML = "<p>No items found.</p>";
@@ -84,12 +111,8 @@
         }
 
         itemsToShow.forEach((item, index) => {
-            // Create a safe version of the data for the onclick function
-            const safeDesc = item.description.replace(/'/g, "\\'");
-            const safeLoc = item.location.replace(/'/g, "\\'");
-
             const cardHTML = `
-                <div class="item-card" onclick="openModal(${index})">
+                <div class="item-card" onclick="openModal('${item.id}')">
                     <img class="item-image" src="${item.image}" alt="${item.category}">
                     <div class="item-details">
                         <h4>${item.category}</h4>
@@ -102,9 +125,9 @@
         });
     }
 
-    // 3. Setup the Popup Box (Modal)
-    function openModal(index) {
-        const item = items[index];
+    // 4. Modal Logic
+    function openModal(itemId) {
+        const item = allItems.find(i => i.id === itemId);
         document.getElementById('modalImg').src = item.image;
         document.getElementById('modalTitle').innerText = item.category;
         document.getElementById('modalDesc').innerText = item.description;
@@ -118,27 +141,21 @@
         }
     }
 
-    // 4. Setup the Category Filters
-    const checkboxes = document.querySelectorAll('.filter-cb');
-    checkboxes.forEach(box => {
-        box.addEventListener('change', () => {
-            // Find which boxes are checked
-            const checkedValues = Array.from(checkboxes)
-                                       .filter(cb => cb.checked)
-                                       .map(cb => cb.value);
-            
-            if (checkedValues.length === 0) {
-                displayItems(items); // If none checked, show all
-            } else {
-                // Filter the list based on checked categories
-                const filteredItems = items.filter(item => checkedValues.includes(item.category));
-                displayItems(filteredItems);
-            }
-        });
-    });
+    // 5. Category Filters
+    function applyFilters() {
+        const checkboxes = document.querySelectorAll('.filter-cb');
+        const checkedValues = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+        
+        if (checkedValues.length === 0) {
+            displayItems(allItems); 
+        } else {
+            const filteredItems = allItems.filter(item => checkedValues.includes(item.category));
+            displayItems(filteredItems);
+        }
+    }
 
-    // Run this when the page first loads
-    displayItems(items);
+    const checkboxes = document.querySelectorAll('.filter-cb');
+    checkboxes.forEach(box => box.addEventListener('change', applyFilters));
 </script>
 
 </body>
