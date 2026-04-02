@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lessinggymnasium - Search Lost Items</title>
+    <style>
+        :root { --dull-green: #a3b18a; --light-bg: #f8f9fa; --white: #ffffff; --text-dark: #333; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: var(--light-bg); color: var(--text-dark); }
+        .top-nav { padding: 10px 20px; background-color: var(--white); font-size: 14px; font-weight: bold; }
+        .top-nav a { color: blue; text-decoration: underline; }
+        header { background-color: var(--white); padding: 10px 20px 20px 20px; text-align: center; }
+        .logo { max-width: 200px; height: auto; }
+        .container { display: flex; max-width: 1200px; margin: 0 auto; padding: 20px; gap: 30px; }
+        
+        .sidebar { flex: 0 0 250px; background-color: var(--dull-green); padding: 25px; border-radius: 12px; color: var(--white); height: fit-content; }
+        .sidebar h3 { margin-top: 0; border-bottom: 2px solid white; padding-bottom: 10px; }
+        .sidebar label { display: block; margin-bottom: 15px; font-size: 16px; cursor: pointer; }
+
+        .items-grid { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+        
+        .item-card { background: var(--white); border-radius: 10px; overflow: hidden; cursor: pointer; border: 2px solid #e0e0e0; display: flex; flex-direction: column; }
+        .item-card:hover { transform: scale(1.03); border-color: var(--dull-green); }
+        .item-image { width: 100%; height: 180px; object-fit: cover; background-color: #e9ecef; }
+        .item-details { padding: 15px; }
+        .item-details h4 { margin: 0 0 5px 0; color: var(--text-dark); font-size: 18px; }
+        .desc-preview { margin: 5px 0 10px 0; font-size: 14px; color: #555; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .item-location { font-size: 13px; font-weight: bold; color: var(--dull-green); }
+
+        /* Popup Modal */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: var(--white); width: 90%; max-width: 500px; border-radius: 12px; padding: 20px; position: relative; }
+        .close-btn { position: absolute; top: 15px; right: 15px; font-size: 24px; cursor: pointer; border: none; background: none; }
+        .modal-image { width: 100%; height: 250px; object-fit: cover; border-radius: 8px; margin-bottom: 15px;}
+        .modal-title { margin: 0 0 10px 0; font-size: 22px; }
+        .modal-desc { font-size: 16px; margin-bottom: 15px; line-height: 1.5; }
+        .modal-loc { font-size: 14px; font-weight: bold; color: var(--dull-green); padding: 10px; background: var(--light-bg); border-radius: 6px; }
+    </style>
+</head>
+<body>
+
+<div class="top-nav">
+    |found something? click <a href="index.html">here</a>|
+</div>
+
+<header>
+    <img src="lessing-logo.png" alt="Lessinggymnasium Logo" class="logo">
+</header>
+
+<div class="container">
+    <div class="sidebar">
+        <h3>Categories</h3>
+        <label><input type="checkbox" class="filter-cb" value="Electronics"> Electronics</label>
+        <label><input type="checkbox" class="filter-cb" value="School Material"> School Material</label>
+        <label><input type="checkbox" class="filter-cb" value="Clothing/Accessories"> Clothing/Accessories</label>
+        <label><input type="checkbox" class="filter-cb" value="Other"> Other</label>
+    </div>
+
+    <div class="items-grid" id="itemsContainer">
+        </div>
+</div>
+
+<div class="modal-overlay" id="itemModal" onclick="closeModal(event)">
+    <div class="modal-content">
+        <button class="close-btn" onclick="document.getElementById('itemModal').style.display='none'">&times;</button>
+        <img id="modalImg" class="modal-image" src="" alt="Item">
+        <h2 class="modal-title" id="modalTitle">Item Name</h2>
+        <p class="modal-desc" id="modalDesc">Full description goes here.</p>
+        <div class="modal-loc" id="modalLoc">Location</div>
+    </div>
+</div>
+
+<script>
+    // 1. Get the items from Browser Memory
+    let items = JSON.parse(localStorage.getItem('lessingItems')) || [];
+
+    // 2. Function to draw the items on the screen
+    function displayItems(itemsToShow) {
+        const container = document.getElementById('itemsContainer');
+        container.innerHTML = ''; // Clear current items
+
+        if(itemsToShow.length === 0) {
+            container.innerHTML = "<p>No items found.</p>";
+            return;
+        }
+
+        itemsToShow.forEach((item, index) => {
+            // Create a safe version of the data for the onclick function
+            const safeDesc = item.description.replace(/'/g, "\\'");
+            const safeLoc = item.location.replace(/'/g, "\\'");
+
+            const cardHTML = `
+                <div class="item-card" onclick="openModal(${index})">
+                    <img class="item-image" src="${item.image}" alt="${item.category}">
+                    <div class="item-details">
+                        <h4>${item.category}</h4>
+                        <div class="desc-preview">${item.description}</div>
+                        <div class="item-location">📍 ${item.location}</div>
+                    </div>
+                </div>
+            `;
+            container.innerHTML += cardHTML;
+        });
+    }
+
+    // 3. Setup the Popup Box (Modal)
+    function openModal(index) {
+        const item = items[index];
+        document.getElementById('modalImg').src = item.image;
+        document.getElementById('modalTitle').innerText = item.category;
+        document.getElementById('modalDesc').innerText = item.description;
+        document.getElementById('modalLoc').innerText = "Found at: " + item.location;
+        document.getElementById('itemModal').style.display = 'flex';
+    }
+
+    function closeModal(event) {
+        if (event.target.id === 'itemModal') {
+            document.getElementById('itemModal').style.display = 'none';
+        }
+    }
+
+    // 4. Setup the Category Filters
+    const checkboxes = document.querySelectorAll('.filter-cb');
+    checkboxes.forEach(box => {
+        box.addEventListener('change', () => {
+            // Find which boxes are checked
+            const checkedValues = Array.from(checkboxes)
+                                       .filter(cb => cb.checked)
+                                       .map(cb => cb.value);
+            
+            if (checkedValues.length === 0) {
+                displayItems(items); // If none checked, show all
+            } else {
+                // Filter the list based on checked categories
+                const filteredItems = items.filter(item => checkedValues.includes(item.category));
+                displayItems(filteredItems);
+            }
+        });
+    });
+
+    // Run this when the page first loads
+    displayItems(items);
+</script>
+
+</body>
+</html>

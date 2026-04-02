@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lessinggymnasium - Report Found Item</title>
+    <style>
+        :root { --dull-green: #a3b18a; --light-bg: #f8f9fa; --white: #ffffff; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: var(--light-bg); color: #333; }
+        .top-nav { padding: 10px 20px; background-color: var(--white); font-size: 14px; font-weight: bold; }
+        .top-nav a { color: blue; text-decoration: underline; }
+        header { background-color: var(--white); padding: 10px 20px 20px 20px; text-align: center; border-bottom: 3px solid var(--dull-green); }
+        .logo { max-width: 200px; height: auto; }
+        .container { display: flex; justify-content: center; padding: 20px; }
+        .upload-section { background: var(--white); padding: 30px; border-radius: 8px; width: 100%; max-width: 500px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        input, select, textarea { width: 100%; padding: 12px; margin: 10px 0 20px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit; }
+        button { background-color: var(--dull-green); color: white; padding: 15px 20px; border: none; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; border-radius: 4px; }
+        button:hover { background-color: #8f9e77; }
+    </style>
+</head>
+<body>
+
+<div class="top-nav">
+    |searching for something? click <a href="search.html">here</a>|
+</div>
+
+<header>
+    <img src="lessing-logo.png" alt="Lessinggymnasium Logo" class="logo">
+    <h1>Report a Found Item</h1>
+</header>
+
+<div class="container">
+    <section class="upload-section">
+        <p>Help a fellow student out. Upload a picture and details of what you found. You will remain completely anonymous.</p>
+        <form id="uploadForm">
+            <label><strong>Upload Image:</strong></label>
+            <input type="file" id="itemImage" accept="image/*" required>
+            
+            <label><strong>Category:</strong></label>
+            <select id="itemCategory" required>
+                <option value="">Select Category</option>
+                <option value="Electronics">Electronics</option>
+                <option value="School Material">School Material</option>
+                <option value="Clothing/Accessories">Clothing/Accessories</option>
+                <option value="Other">Other</option>
+            </select>
+            
+            <label><strong>Description (Include a short name first!):</strong></label>
+            <textarea id="itemDesc" rows="4" placeholder="Example: Blue Casio Calculator. Found it sitting on the back desk..." required></textarea>
+            
+            <label><strong>Location Found:</strong></label>
+            <input type="text" id="itemLocation" placeholder="e.g. Room 204 or Cafeteria" required>
+            
+            <button type="submit">Post Anonymously</button>
+        </form>
+    </section>
+</div>
+
+<script>
+    // This script saves the uploaded item to your browser's memory
+    document.getElementById('uploadForm').addEventListener('submit', function(e) {
+        e.preventDefault(); // Prevents the page from just refreshing
+
+        const fileInput = document.getElementById('itemImage');
+        const category = document.getElementById('itemCategory').value;
+        const desc = document.getElementById('itemDesc').value;
+        const location = document.getElementById('itemLocation').value;
+
+        // Convert the image to a format the browser can save
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const imageData = event.target.result;
+
+            // Create an object for the new item
+            const newItem = {
+                image: imageData,
+                category: category,
+                description: desc,
+                location: location,
+                date: new Date().toLocaleDateString()
+            };
+
+            // Get existing items from memory, or start an empty list
+            let lostItems = JSON.parse(localStorage.getItem('lessingItems')) || [];
+            lostItems.push(newItem); // Add new item to the list
+            
+            // Save it back to memory
+            localStorage.setItem('lessingItems', JSON.stringify(lostItems));
+
+            alert("Item successfully posted!");
+            window.location.href = "search.html"; // Send user to search page
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+    });
+</script>
+
+</body>
+</html>
