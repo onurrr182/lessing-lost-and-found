@@ -16,6 +16,7 @@
         .sidebar { flex: 0 0 250px; background-color: var(--dull-green); padding: 25px; border-radius: 12px; color: var(--white); height: fit-content; }
         .sidebar h3 { margin-top: 0; border-bottom: 2px solid white; padding-bottom: 10px; }
         .sidebar label { display: block; margin-bottom: 15px; font-size: 16px; cursor: pointer; }
+        .search-input { width: 100%; padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit; }
 
         .items-grid { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
         
@@ -53,6 +54,7 @@
 
 <div class="container">
     <div class="sidebar">
+        <input type="text" id="searchInput" class="search-input" data-i18n-ph="searchPh" placeholder="Search...">
         <h3 data-i18n="filterTitle">Categories</h3>
         <label><input type="checkbox" class="filter-cb" value="Electronics"> <span data-i18n="catElec">Electronics</span></label>
         <label><input type="checkbox" class="filter-cb" value="School Material"> <span data-i18n="catSchool">School Material</span></label>
@@ -83,16 +85,24 @@
         en: {
             navText: "found something? click", navLink: "here", title: "Lost Items Database",
             filterTitle: "Categories", catElec: "Electronics", catSchool: "School Material",
-            catCloth: "Clothing/Accessories", catOther: "Other", noItems: "No items found.", foundAt: "Found at: "
+            catCloth: "Clothing/Accessories", catOther: "Other", noItems: "No items found.", foundAt: "Found at: ",
+            searchPh: "Search...", pickupAt: "Pick-up at: ", contact: "Contact: "
         },
         de: {
              navText: "Etwas gefunden? Klicke", navLink: "hier", title: "Datenbank für verlorene Gegenstände",
              filterTitle: "Kategorien", catElec: "Elektronik", catSchool: "Schulmaterial",
-             catCloth: "Kleidung/Accessoires", catOther: "Sonstiges", noItems: "Keine Gegenstände gefunden.", foundAt: "Gefunden in: "
+             catCloth: "Kleidung/Accessoires", catOther: "Sonstiges", noItems: "Keine Gegenstände gefunden.", foundAt: "Gefunden in: ",
+             searchPh: "Suchen...", pickupAt: "Abholort: ", contact: "Kontakt: "
         }
     };
 
     let currentLang = localStorage.getItem('lessingLang') || 'en';
+    const urlParams = new URLSearchParams(window.location.search);
+    const langParam = urlParams.get('currentLang');
+    if (langParam) {
+        if (langParam.startsWith('de')) currentLang = 'de';
+        else if (langParam.startsWith('en')) currentLang = 'en';
+    }
 
     function setLanguage(lang) {
         currentLang = lang;
@@ -101,6 +111,9 @@
 
         document.querySelectorAll('[data-i18n]').forEach(el => {
             el.innerText = dict[lang][el.getAttribute('data-i18n')];
+        });
+        document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+            el.placeholder = dict[lang][el.getAttribute('data-i18n-ph')];
         });
         applyFilters(); // Re-render items so category text updates
     }
@@ -153,13 +166,16 @@ const firebaseConfig = {
 
         itemsToShow.forEach((item) => {
             const displayCat = translateCategory(item.category);
+            const title = item.shortName ? item.shortName : displayCat;
+            const locText = item.locationMain ? `${item.locationMain} ${item.locationDetails ? '('+item.locationDetails+')' : ''}` : item.location;
+            
             const cardHTML = `
                 <div class="item-card" onclick="openModal('${item.id}')">
                     <img class="item-image" src="${item.image}">
                     <div class="item-details">
-                        <h4>${displayCat}</h4>
+                        <h4>${title}</h4>
                         <div class="desc-preview">${item.description}</div>
-                        <div class="item-location">📍 ${item.location}</div>
+                        <div class="item-location">📍 ${locText}</div>
                     </div>
                 </div>
             `;
@@ -169,10 +185,19 @@ const firebaseConfig = {
 
     function openModal(itemId) {
         const item = allItems.find(i => i.id === itemId);
+        const displayCat = translateCategory(item.category);
+        const title = item.shortName ? `${item.shortName} (${displayCat})` : displayCat;
+        const locText = item.locationMain ? `${item.locationMain} ${item.locationDetails ? '('+item.locationDetails+')' : ''}` : item.location;
+        
         document.getElementById('modalImg').src = item.image;
-        document.getElementById('modalTitle').innerText = translateCategory(item.category);
+        document.getElementById('modalTitle').innerText = title;
         document.getElementById('modalDesc').innerText = item.description;
-        document.getElementById('modalLoc').innerText = dict[currentLang].foundAt + item.location;
+        
+        let locHTML = `${dict[currentLang].foundAt} ${locText}`;
+        if(item.pickupLocation) locHTML += `<br>${dict[currentLang].pickupAt} ${item.pickupLocation}`;
+        if(item.contactInfo) locHTML += `<br>${dict[currentLang].contact} ${item.contactInfo}`;
+        
+        document.getElementById('modalLoc').innerHTML = locHTML;
         document.getElementById('itemModal').style.display = 'flex';
     }
 
@@ -185,17 +210,28 @@ const firebaseConfig = {
     function applyFilters() {
         const checkboxes = document.querySelectorAll('.filter-cb');
         const checkedValues = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+        const searchText = document.getElementById('searchInput').value.toLowerCase();
         
-        if (checkedValues.length === 0) {
-            displayItems(allItems); 
-        } else {
-            const filteredItems = allItems.filter(item => checkedValues.includes(item.category));
-            displayItems(filteredItems);
+        let filteredItems = allItems;
+        
+        if (checkedValues.length > 0) {
+            filteredItems = filteredItems.filter(item => checkedValues.includes(item.category));
         }
+        
+        if (searchText.trim() !== "") {
+            filteredItems = filteredItems.filter(item => {
+                const titleMatch = item.shortName ? item.shortName.toLowerCase().includes(searchText) : false;
+                const descMatch = item.description ? item.description.toLowerCase().includes(searchText) : false;
+                return titleMatch || descMatch;
+            });
+        }
+        
+        displayItems(filteredItems);
     }
 
     checkboxes = document.querySelectorAll('.filter-cb');
     checkboxes.forEach(box => box.addEventListener('change', applyFilters));
+    document.getElementById('searchInput').addEventListener('input', applyFilters);
 
     // Initialize Language on load
     setLanguage(currentLang);

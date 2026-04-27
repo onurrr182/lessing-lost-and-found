@@ -36,6 +36,9 @@
     <section class="upload-section">
         <p data-i18n="subtitle">Help a fellow student out. Upload a picture and details of what you found. You will remain completely anonymous.</p>
         <form id="uploadForm">
+            <label><strong data-i18n="lblShortName">Short Name / Title:</strong></label>
+            <input type="text" id="itemShortName" data-i18n-ph="phShortName" placeholder="e.g. Blue Calculator" required>
+
             <label><strong data-i18n="lblImage">Upload Image:</strong></label>
             <input type="file" id="itemImage" accept="image/*" required>
             
@@ -48,13 +51,28 @@
                 <option value="Other" data-i18n="catOther">Other</option>
             </select>
             
-            <label><strong data-i18n="lblDesc">Description (Include a short name first!):</strong></label>
-            <textarea id="itemDesc" rows="4" data-i18n-ph="phDesc" placeholder="Example: Blue Casio Calculator. Found it sitting on the back desk..." required></textarea>
+            <label><strong data-i18n="lblDesc">Description:</strong></label>
+            <textarea id="itemDesc" rows="4" data-i18n-ph="phDesc" placeholder="Detailed description..." required></textarea>
             
             <label><strong data-i18n="lblLoc">Location Found:</strong></label>
-            <input type="text" id="itemLocation" data-i18n-ph="phLoc" placeholder="e.g. Room 204 or Cafeteria" required>
+            <select id="itemLocationMain" required>
+                <option value="" data-i18n="locDefault">Select Location</option>
+                <option value="Hauptgebäude">Hauptgebäude</option>
+                <option value="B-Gebäude">B-Gebäude</option>
+                <option value="GS-Gebäude">GS-Gebäude</option>
+                <option value="F-Räume">F-Räume</option>
+                <option value="Außengelände">Außengelände</option>
+                <option value="Sonstiger Ort">Sonstiger Ort</option>
+            </select>
+            <input type="text" id="itemLocationDetails" data-i18n-ph="phLocDetails" placeholder="Details (e.g. Room A111)">
             
-            <button type="submit" id="submitBtn" data-i18n="btnSubmit">Post Anonymously</button>
+            <label><strong data-i18n="lblPickup">Pick-up Location:</strong></label>
+            <input type="text" id="itemPickup" data-i18n-ph="phPickup" placeholder="Where can it be picked up? (e.g. Secretary)">
+
+            <label><strong data-i18n="lblContact">Contact Info (Optional):</strong></label>
+            <input type="text" id="itemContact" data-i18n-ph="phContact" placeholder="Your name or email so the owner can reach you">
+            
+            <button type="submit" id="submitBtn" data-i18n="btnSubmit">Post</button>
         </form>
     </section>
 </div>
@@ -68,18 +86,26 @@
         en: {
             navText: "searching for something? click", navLink: "here", title: "Report a Found Item",
             subtitle: "Help a fellow student out. Upload a picture and details of what you found. You will remain completely anonymous.",
+            lblShortName: "Short Name / Title:", phShortName: "e.g. Blue Calculator",
             lblImage: "Upload Image:", lblCat: "Category:", catDefault: "Select Category",
             catElec: "Electronics", catSchool: "School Material", catCloth: "Clothing/Accessories", catOther: "Other",
-            lblDesc: "Description (Include a short name first!):", phDesc: "Example: Blue Casio Calculator. Found it sitting on the back desk...",
-            lblLoc: "Location Found:", phLoc: "e.g. Room 204 or Cafeteria", btnSubmit: "Post Anonymously", uploading: "Uploading to Cloud..."
+            lblDesc: "Description:", phDesc: "Detailed description...",
+            lblLoc: "Location Found:", locDefault: "Select Location", phLocDetails: "Details (e.g. Room A111)",
+            lblPickup: "Pick-up Location:", phPickup: "Where can it be picked up? (e.g. Secretary)",
+            lblContact: "Contact Info (Optional):", phContact: "Your name or email",
+            btnSubmit: "Post", uploading: "Uploading to Cloud..."
         },
         de: {
             navText: "Suchst du etwas? Klicke", navLink: "hier", title: "Gefundenen Gegenstand melden",
-            subtitle: "Hilf einem Mitschüler. Lade ein Bild und Details hoch. Du bleibst komplett anonym.",
+            subtitle: "Hilf einem Mitschüler. Lade ein Bild und Details hoch.",
+            lblShortName: "Kurzer Name / Titel:", phShortName: "z.B. Blauer Taschenrechner",
             lblImage: "Bild hochladen:", lblCat: "Kategorie:", catDefault: "Kategorie auswählen",
             catElec: "Elektronik", catSchool: "Schulmaterial", catCloth: "Kleidung/Accessoires", catOther: "Sonstiges",
-            lblDesc: "Beschreibung (Kurzer Name zuerst!):", phDesc: "Beispiel: Blauer Casio Taschenrechner. Lag auf dem hinteren Tisch...",
-            lblLoc: "Fundort:", phLoc: "z.B. Raum 204 oder Mensa", btnSubmit: "Anonym posten", uploading: "Wird hochgeladen..."
+            lblDesc: "Beschreibung:", phDesc: "Ausführliche Beschreibung...",
+            lblLoc: "Fundort:", locDefault: "Standort auswählen", phLocDetails: "Details (z.B. Raum A111)",
+            lblPickup: "Abholort:", phPickup: "Wo kann es abgeholt werden? (z.B. Sekretariat)",
+            lblContact: "Kontaktinfo (Optional):", phContact: "Dein Name oder E-Mail",
+            btnSubmit: "Posten", uploading: "Wird hochgeladen..."
         }
     };
 
@@ -129,10 +155,14 @@ const firebaseConfig = {
         const reader = new FileReader();
         reader.onload = function(event) {
             db.collection("lostItems").add({
+                shortName: document.getElementById('itemShortName').value,
                 image: event.target.result,
                 category: document.getElementById('itemCategory').value,
                 description: document.getElementById('itemDesc').value,
-                location: document.getElementById('itemLocation').value,
+                locationMain: document.getElementById('itemLocationMain').value,
+                locationDetails: document.getElementById('itemLocationDetails').value,
+                pickupLocation: document.getElementById('itemPickup').value,
+                contactInfo: document.getElementById('itemContact').value,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
                 alert(currentLang === 'en' ? "Item saved!" : "Gespeichert!");
