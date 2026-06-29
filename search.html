@@ -6,9 +6,14 @@
     <style>
         :root { --dull-green: #a3b18a; --light-bg: #f8f9fa; --white: #ffffff; --text-dark: #333; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: var(--light-bg); color: var(--text-dark); }
-        .top-nav { padding: 10px 20px; background-color: var(--white); font-size: 14px; font-weight: bold; display: flex; justify-content: space-between; align-items: center;}
-        .top-nav a { color: blue; text-decoration: underline; }
-        .lang-btn { background: var(--light-bg); border: 1px solid #ccc; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .top-nav { padding: 15px 20px; background-color: var(--white); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
+        .nav-btn { background-color: var(--dull-green); color: white !important; text-decoration: none !important; padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: bold; display: inline-flex; align-items: center; gap: 8px; transition: background-color 0.2s, transform 0.1s; }
+        .nav-btn:hover { background-color: #8f9e77; }
+        .nav-btn:active { transform: scale(0.98); }
+        .lang-btn { background: var(--light-bg); border: 1px solid #ccc; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+        .lang-btn:hover { background: #e2e8f0; }
+        .feedback-trigger-btn { background-color: transparent; color: white; border: 2px solid white; padding: 10px 15px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; font-size: 14px; transition: background-color 0.2s, color 0.2s; margin-top: 15px; }
+        .feedback-trigger-btn:hover { background-color: white; color: var(--dull-green); }
         header { background-color: var(--white); padding: 10px 20px 20px 20px; text-align: center; }
         .logo { max-width: 200px; height: auto; }
         .container { display: flex; max-width: 1200px; margin: 0 auto; padding: 20px; gap: 30px; }
@@ -41,9 +46,7 @@
 <body>
 
 <div class="top-nav">
-    <div>
-        |<span data-i18n="navText">found something? click</span> <a href="index.html" data-i18n="navLink">here</a>|
-    </div>
+    <a href="index.html" class="nav-btn" data-i18n="navBtn">➕ Report Found Item</a>
     <button id="langToggle" class="lang-btn">🇩🇪 DE</button>
 </div>
 
@@ -60,6 +63,8 @@
         <label><input type="checkbox" class="filter-cb" value="School Material"> <span data-i18n="catSchool">School Material</span></label>
         <label><input type="checkbox" class="filter-cb" value="Clothing/Accessories"> <span data-i18n="catCloth">Clothing/Accessories</span></label>
         <label><input type="checkbox" class="filter-cb" value="Other"> <span data-i18n="catOther">Other</span></label>
+        <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.3); margin: 20px 0;">
+        <button id="feedbackBtn" class="feedback-trigger-btn" onclick="openFeedbackModal()" data-i18n="feedbackBtn">💬 Give Feedback</button>
     </div>
 
     <div class="items-grid" id="itemsContainer">
@@ -76,6 +81,28 @@
     </div>
 </div>
 
+<!-- Feedback Modal -->
+<div class="modal-overlay" id="feedbackModal" onclick="closeFeedbackModal(event)">
+    <div class="modal-content">
+        <button class="close-btn" onclick="document.getElementById('feedbackModal').style.display='none'">&times;</button>
+        <h2 data-i18n="feedbackTitle">Feedback / Suggestion</h2>
+        <p style="font-size:14px; color:#666;" data-i18n="feedbackDesc">Help us improve the school's digital lost & found office! Share your feedback, ideas, or report bugs here.</p>
+        <form id="feedbackForm">
+            <label><strong data-i18n="lblFeedbackType">Type of Feedback:</strong></label>
+            <select id="feedbackType" required style="width:100%; padding:10px; margin: 10px 0 20px 0; border:1px solid #ccc; border-radius:4px; font-family:inherit;">
+                <option value="General" data-i18n="fbTypeGeneral">General Feedback</option>
+                <option value="Suggestion" data-i18n="fbTypeSuggest">Improvement Suggestion</option>
+                <option value="Bug" data-i18n="fbTypeBug">Bug Report</option>
+            </select>
+            
+            <label><strong data-i18n="lblFeedbackText">Your Feedback:</strong></label>
+            <textarea id="feedbackText" rows="5" required placeholder="Describe your thoughts..." data-i18n-ph="fbTextPh" style="width:100%; padding:10px; margin: 10px 0 20px 0; border:1px solid #ccc; border-radius:4px; box-sizing:border-box; font-family:inherit; resize:vertical;"></textarea>
+            
+            <button type="submit" id="feedbackSubmitBtn" data-i18n="btnSubmitFeedback">Send Feedback</button>
+        </form>
+    </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
@@ -83,16 +110,28 @@
     // --- TRANSLATION LOGIC ---
     const dict = {
         en: {
-            navText: "found something? click", navLink: "here", title: "Lost Items Database",
+            navBtn: "➕ Report Found Item", title: "Lost Items Database",
             filterTitle: "Categories", catElec: "Electronics", catSchool: "School Material",
             catCloth: "Clothing/Accessories", catOther: "Other", noItems: "No items found.", foundAt: "Found at: ",
-            searchPh: "Search...", pickupAt: "Pick-up at: ", contact: "Contact: "
+            searchPh: "Search...", pickupAt: "Pick-up at: ", contact: "Contact: ",
+            feedbackBtn: "💬 Give Feedback", feedbackTitle: "Feedback & Suggestions",
+            feedbackDesc: "Help us improve the school's digital lost & found office! Share your feedback, ideas, or report bugs here.",
+            lblFeedbackType: "Type of Feedback:", fbTypeGeneral: "General Feedback",
+            fbTypeSuggest: "Improvement Suggestion", fbTypeBug: "Bug Report",
+            lblFeedbackText: "Your Feedback:", fbTextPh: "Describe your thoughts...",
+            btnSubmitFeedback: "Send Feedback"
         },
         de: {
-             navText: "Etwas gefunden? Klicke", navLink: "hier", title: "Datenbank für verlorene Gegenstände",
+             navBtn: "➕ Gegenstand melden", title: "Datenbank für verlorene Gegenstände",
              filterTitle: "Kategorien", catElec: "Elektronik", catSchool: "Schulmaterial",
              catCloth: "Kleidung/Accessoires", catOther: "Sonstiges", noItems: "Keine Gegenstände gefunden.", foundAt: "Gefunden in: ",
-             searchPh: "Suchen...", pickupAt: "Abholort: ", contact: "Kontakt: "
+             searchPh: "Suchen...", pickupAt: "Abholort: ", contact: "Kontakt: ",
+             feedbackBtn: "💬 Feedback geben", feedbackTitle: "Feedback & Wünsche",
+             feedbackDesc: "Hilf uns, das digitale Fundbüro der Schule zu verbessern! Teile dein Feedback, deine Ideen oder melde Fehler.",
+             lblFeedbackType: "Art des Feedbacks:", fbTypeGeneral: "Allgemeines Feedback",
+             fbTypeSuggest: "Verbesserungswunsch", fbTypeBug: "Fehler melden",
+             lblFeedbackText: "Dein Feedback:", fbTextPh: "Beschreibe deine Gedanken...",
+             btnSubmitFeedback: "Feedback senden"
         }
     };
 
@@ -206,6 +245,42 @@ const firebaseConfig = {
             document.getElementById('itemModal').style.display = 'none';
         }
     }
+
+    // Feedback functions
+    function openFeedbackModal() {
+        document.getElementById('feedbackModal').style.display = 'flex';
+    }
+
+    function closeFeedbackModal(event) {
+        if (event.target.id === 'feedbackModal') {
+            document.getElementById('feedbackModal').style.display = 'none';
+        }
+    }
+
+    document.getElementById('feedbackForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const submitBtn = document.getElementById('feedbackSubmitBtn');
+        const originalText = submitBtn.innerText;
+        submitBtn.disabled = true;
+        submitBtn.innerText = currentLang === 'en' ? 'Sending...' : 'Wird gesendet...';
+
+        db.collection("feedback").add({
+            type: document.getElementById('feedbackType').value,
+            text: document.getElementById('feedbackText').value,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => {
+            alert(currentLang === 'en' ? "Thank you for your feedback!" : "Vielen Dank für dein Feedback!");
+            document.getElementById('feedbackForm').reset();
+            document.getElementById('feedbackModal').style.display = 'none';
+            submitBtn.disabled = false;
+            submitBtn.innerText = originalText;
+        }).catch((error) => {
+            console.error("Error submitting feedback: ", error);
+            alert("Error sending feedback. Please try again.");
+            submitBtn.disabled = false;
+            submitBtn.innerText = originalText;
+        });
+    });
 
     function applyFilters() {
         const checkboxes = document.querySelectorAll('.filter-cb');

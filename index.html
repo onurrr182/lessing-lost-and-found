@@ -6,9 +6,12 @@
     <style>
         :root { --dull-green: #a3b18a; --light-bg: #f8f9fa; --white: #ffffff; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: var(--light-bg); color: #333; }
-        .top-nav { padding: 10px 20px; background-color: var(--white); font-size: 14px; font-weight: bold; display: flex; justify-content: space-between; align-items: center;}
-        .top-nav a { color: blue; text-decoration: underline; }
-        .lang-btn { background: var(--light-bg); border: 1px solid #ccc; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .top-nav { padding: 15px 20px; background-color: var(--white); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
+        .nav-btn { background-color: var(--dull-green); color: white !important; text-decoration: none !important; padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: bold; display: inline-flex; align-items: center; gap: 8px; transition: background-color 0.2s, transform 0.1s; }
+        .nav-btn:hover { background-color: #8f9e77; }
+        .nav-btn:active { transform: scale(0.98); }
+        .lang-btn { background: var(--light-bg); border: 1px solid #ccc; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+        .lang-btn:hover { background: #e2e8f0; }
         header { background-color: var(--white); padding: 10px 20px 20px 20px; text-align: center; border-bottom: 3px solid var(--dull-green); }
         .logo { max-width: 200px; height: auto; }
         .container { display: flex; justify-content: center; padding: 20px; }
@@ -21,9 +24,7 @@
 <body>
 
 <div class="top-nav">
-    <div>
-        |<span data-i18n="navText">searching for something? click</span> <a href="search.html" data-i18n="navLink">here</a>|
-    </div>
+    <a href="search.html" class="nav-btn" data-i18n="navBtn">🔍 Search Lost Items</a>
     <button id="langToggle" class="lang-btn">🇩🇪 DE</button>
 </div>
 
@@ -84,7 +85,7 @@
     // --- TRANSLATION LOGIC ---
     const dict = {
         en: {
-            navText: "searching for something? click", navLink: "here", title: "Report a Found Item",
+            navBtn: "🔍 Search Lost Items", title: "Report a Found Item",
             subtitle: "Help a fellow student out. Upload a picture and details of what you found. You will remain completely anonymous.",
             lblShortName: "Short Name / Title:", phShortName: "e.g. Blue Calculator",
             lblImage: "Upload Image:", lblCat: "Category:", catDefault: "Select Category",
@@ -96,7 +97,7 @@
             btnSubmit: "Post", uploading: "Uploading to Cloud..."
         },
         de: {
-            navText: "Suchst du etwas? Klicke", navLink: "hier", title: "Gefundenen Gegenstand melden",
+            navBtn: "🔍 Datenbank durchsuchen", title: "Gefundenen Gegenstand melden",
             subtitle: "Hilf einem Mitschüler. Lade ein Bild und Details hoch.",
             lblShortName: "Kurzer Name / Titel:", phShortName: "z.B. Blauer Taschenrechner",
             lblImage: "Bild hochladen:", lblCat: "Kategorie:", catDefault: "Kategorie auswählen",
